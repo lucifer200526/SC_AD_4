@@ -1,0 +1,77 @@
+package com.example.qrcodeapp
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.os.Bundle
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.MultiFormatWriter
+import com.google.zxing.common.BitMatrix
+import com.google.zxing.integration.android.IntentIntegrator
+
+class MainActivity : AppCompatActivity() {
+
+    private lateinit var imageView: ImageView
+    private lateinit var editText: EditText
+    private lateinit var btnScan: Button
+    private lateinit var btnGenerate: Button
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        imageView = findViewById(R.id.qrImage)
+        editText = findViewById(R.id.etText)
+        btnScan = findViewById(R.id.btnScan)
+        btnGenerate = findViewById(R.id.btnGenerate)
+
+        btnScan.setOnClickListener {
+            val integrator = IntentIntegrator(this)
+            integrator.setPrompt("Scan QR Code")
+            integrator.setBeepEnabled(true)
+            integrator.setOrientationLocked(true)
+            integrator.initiateScan()
+        }
+
+        btnGenerate.setOnClickListener {
+            val text = editText.text.toString()
+            if (text.isNotEmpty()) {
+                val bitmap = generateQRCode(text)
+                imageView.setImageBitmap(bitmap)
+            } else {
+                Toast.makeText(this, "Enter text first", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+        if (result != null) {
+            if (result.contents != null) {
+                Toast.makeText(this, "Scanned: ${result.contents}", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Scan cancelled", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
+    private fun generateQRCode(text: String): Bitmap {
+        val writer = MultiFormatWriter()
+        val bitMatrix: BitMatrix =
+            writer.encode(text, BarcodeFormat.QR_CODE, 400, 400)
+
+        val bitmap = Bitmap.createBitmap(400, 400, Bitmap.Config.RGB_565)
+        for (x in 0 until 400) {
+            for (y in 0 until 400) {
+                bitmap.setPixel(
+                    x,
+                    y,
+                    if (bitMatrix[x, y]) Color.BLACK else Color.WHITE
+                )
+            }
+        }
+        return bitmap
+    }
+}
